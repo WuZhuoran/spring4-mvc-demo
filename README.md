@@ -28,3 +28,5 @@ gradle jettyRun
 ## Notice
 
 ## Acknowledgement
+
+The Project base stucture is refered from [mkyong](https://github.com/mkyong/spring4-mvc-gradle-xml-hello-world).
