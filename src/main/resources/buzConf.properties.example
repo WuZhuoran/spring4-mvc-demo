@@ -1,0 +1,28 @@
+## 默认数据库HOST：
+DB_HOST=127.0.0.1
+## 默认数据库用户名和密码：
+DB_USER=root
+DB_PASS=123456
+DB_PORT=13316
+
+## springmvc 用数据库名，默认"spring-mvc-demo"
+SPRING_MVC_DB_SCHEMA=spring-mvc-demo
+
+
+db.host=${DB_HOST}
+db.port=${DB_PORT:13316}
+db.args=${DB_ARGS:?useUnicode=true&autoReconnect=true&rewriteBatchedStatements=TRUE&useOldAliasMetadataBehavior=true}
+db.user=${DB_USER}
+db.pass=${DB_PASS}
+
+db.timeBetweenEvictionRunsMillis=2000
+db.minEvictableIdleTimeMillis=2000
+
+springmvc.db.host=${CLOUD_COMPANY_DB_HOST:${db.host}}
+springmvc.db.port=${CLOUD_COMPANY_DB_PORT:${db.port}}
+springmvc.db.user=${CLOUD_COMPANY_DB_USER:${db.user}}
+springmvc.db.pass=${CLOUD_COMPANY_DB_PASS:${db.pass}}
+springmvc.db.args=${CLOUD_COMPANY_DB_ARGS:${db.args}}
+springmvc.db.schema=${CLOUD_COMPANY_DB_SCHEMA:spring-mvc-demo}
+
+springmvc.db.url=jdbc:mysql://${springmvc.db.host}:${springmvc.db.port}/${springmvc.db.schema}${springmvc.db.args}

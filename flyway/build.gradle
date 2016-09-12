@@ -1,0 +1,60 @@
+buildscript {
+	repositories {
+            mavenLocal()
+            mavenCentral()
+        }
+
+	configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
+
+	dependencies {
+		classpath 'org.flywaydb:flyway-gradle-plugin:3.2.1'
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'org.flywaydb.flyway'
+
+sourceCompatibility = '1.7'
+
+group = 'me.oliverwu.demo'
+ext._version = '0.1.0.0'
+
+if(hasProperty('env')&&env=='product'){
+	version=_version
+}else{
+	version="${_version}-SNAPSHOT"
+}
+
+boolean isSampleDbPropertiesPresent(){
+	def sampleDbPropertyNames=[
+		'sampleDbUser',
+		'sampleDbPassword',
+		'sampleDbUrl',
+	]
+	def absents=[]
+	sampleDbPropertyNames.each{
+		if(!project.hasProperty(it)){
+			println "warn! the property ${it} is absent!"
+			absents.add(it)
+		}
+	}
+	return absents.empty
+}
+
+flyway {
+	if(isSampleDbPropertiesPresent()){
+		user = sampleDbUser
+		password = sampleDbPassword
+		url = sampleDbUrl
+	}
+	if(!hasProperty('target')){
+		ext.target = _version
+	}
+	baselineVersion = '0.0.0'
+	baselineDescription = 'empty base line'
+}
+
+dependencies{
+	compile "mysql:mysql-connector-java:5.1.38"
+}
+

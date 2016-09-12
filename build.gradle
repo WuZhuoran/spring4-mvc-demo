@@ -1,0 +1,205 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+
+    dependencies {
+        classpath 'org.akhikhl.gretty:gretty:+'
+        classpath 'org.flywaydb:flyway-gradle-plugin:3.2.1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'eclipse-wtp'
+apply plugin: 'org.akhikhl.gretty'
+apply plugin: 'idea'
+apply plugin: 'jacoco'
+
+def springVersion = "4.3.2.RELEASE"
+def jdkVersion = 1.8
+def junitVersion = "4.12"
+def logbackVersion = "1.1.3"
+def jclOverSlf4jVersion = "1.7.14"
+def jstlVersion = "1.2"
+def hamcrestVersion = "1.3"
+def servletApiVersion = "4.0.0-b01"
+
+sourceCompatibility = jdkVersion
+targetCompatibility = jdkVersion
+
+group = 'me.oliver.demo'
+ext._version = '0.1.0.0'
+
+if(hasProperty('env') && env == 'product') {
+    version=_version
+} else {
+    version="${_version}-SNAPSHOT"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.10'
+}
+
+configurations.all {
+    exclude group: "commons-logging", module: "commons-logging"
+}
+
+sourceSets{
+    mybatisGenerate{
+        java{
+            srcDir 'src/mybatis-generated/java'
+        }
+        resources{
+            srcDir 'src/mybatis-generated/resources'
+        }
+    }
+    test{
+        java{
+            srcDir 'src/test/java'
+            srcDir 'src/mybatis-generated/java'
+        }
+        resources{
+            srcDir 'src/test/resources'
+            srcDir 'src/mybatis-generated/resources'
+        }
+    }
+    main{
+        java{
+            srcDir 'src/main/java'
+            srcDir 'src/mybatis-generated/java'
+        }
+        resources{
+            srcDir 'src/main/resources'
+            srcDir 'src/mybatis-generated/resources'
+        }
+    }
+}
+
+configurations { mybatisGenerateCompile { extendsFrom compile } }
+
+boolean isSampleDbPropertiesPresent(){
+    def sampleDbPropertyNames=[
+        'sampleDbUser',
+        'sampleDbPassword',
+        'sampleDbUrl',
+    ]
+    def absents=[]
+    sampleDbPropertyNames.each{
+        if(!project.hasProperty(it)){
+            println "warn! the property ${it} is absent!"
+            absents.add(it)
+        }
+    }
+    return absents.empty
+}
+
+ext.mybatisGeneratorTargetPackage = 'me.oliverwu.helloworld.data.auto'
+
+task generateMybatisConfig(type: Copy){
+    from 'mybatis-generator-config'
+    into "$buildDir/mybatis-generator-config"
+    expand(project.properties)
+    if (!isSampleDbPropertiesPresent()){
+        outputs.upToDateWhen{  return false }
+        doLast{ throw new GradleException("missing settings") }
+        return
+    }
+    inputs.property "user", sampleDbUser
+    inputs.property "password", sampleDbPassword
+    inputs.property "url", sampleDbUrl
+    inputs.property "package", mybatisGeneratorTargetPackage
+    inputs.dir file('mybatis-generator-config')
+    outputs.dir file("$buildDir/mybatis-generator-config")
+}
+
+task removeOldGeneratedMybatis(type: Delete){
+    delete 'src/mybatis-generated/java/me', 'src/mybatis-generated/resources/me'
+}
+
+task generateMybatis(type: JavaExec, dependsOn: [generateMybatisConfig, removeOldGeneratedMybatis]) {
+    inputs.dir file("$buildDir/mybatis-generator-config")
+    classpath sourceSets.mybatisGenerate.compileClasspath
+    main = 'org.mybatis.generator.api.ShellRunner'
+    args '-configfile', "$buildDir/mybatis-generator-config/mybatis-generator-config.xml", '-overwrite', '-verbose'
+}
+
+jar { from sourceSets.mybatisGenerate.output }
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+    from sourceSets.mybatisGenerate.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+gretty {
+    port = 8080
+    contextPath = 'spring4'
+    servletContainer = 'jetty9'
+}
+
+eclipse {
+    wtp {
+        component {
+            contextPath = 'spring4'
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.7.5+"
+    reportsDir = file("$buildDir/reports/jacoco")
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
+dependencies {
+
+    compile "com.google.guava:guava:19.0"
+
+    compile 'org.springframework:spring-webmvc:' + springVersion
+    compile 'org.springframework:spring-core:' + springVersion
+    compile 'org.springframework:spring-context:' + springVersion
+    compile 'org.springframework:spring-test:' + springVersion
+    compile "org.springframework:spring-orm:" + springVersion
+    compile "org.springframework:spring-test:" + springVersion
+
+    compile 'org.mybatis:mybatis:3.3.1'
+    compile 'org.mybatis:mybatis-spring:1.2.3'
+
+    compile 'org.apache.tomcat:tomcat-jdbc:8.0.15'
+    compile 'mysql:mysql-connector-java:5.1.38'
+
+    compile 'org.hamcrest:hamcrest-library:' + hamcrestVersion
+    compile 'org.slf4j:jcl-over-slf4j:' + jclOverSlf4jVersion
+
+    compile 'junit:junit:4.12'
+
+    compile 'ch.qos.logback:logback-core:1.1.3'
+    compile 'ch.qos.logback:logback-classic:' + logbackVersion
+
+    compile 'javax.servlet:javax.servlet-api:' + servletApiVersion
+    compile 'javax.servlet:jstl:' + jstlVersion
+
+    testCompile('junit:junit:' + junitVersion) {
+        exclude group: 'org.hamcrest'
+    }
+
+    mybatisGenerateCompile "mysql:mysql-connector-java:5.1.38"
+    mybatisGenerateCompile "org.mybatis.generator:mybatis-generator-core:1.3.2"
+}
+

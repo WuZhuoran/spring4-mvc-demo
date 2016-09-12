@@ -1,0 +1,6 @@
+#sampleDbUser=for_build
+sampleDbUser=for_build
+#sampleDbPassword=for_build
+sampleDbPassword=for_build
+#sampleDbUrl=jdbc:mysql://127.0.0.1:13316/spring-mvc-demo?characterEncoding=utf8
+sampleDbUrl=jdbc:mysql://127.0.0.1:13316/spring-mvc-demo?characterEncoding=utf8

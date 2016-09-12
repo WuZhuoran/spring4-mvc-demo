@@ -1,0 +1,10 @@
+temp_mysql:
+  image: mysql:5.6
+  environment:
+    - MYSQL_ROOT_PASSWORD=123456
+    - MYSQL_USER=for_build
+    - MYSQL_PASSWORD=for_build
+    - MYSQL_DATABASE=spring-mvc-demo
+  ports:
+    - 13316:3306
+
